@@ -21,10 +21,11 @@
     function convertSvgs() {
         const obj = document.querySelector('object').contentDocument
         Array.from(obj.querySelectorAll('a')).forEach(link => {
-            const clickableZone = link.children[0];
-            const collisions = Array.from(obj.querySelectorAll('*')).filter(svgElement => intersectRect(clickableZone, svgElement));
-            collisions.forEach(svgElement => {
-                link.appendChild(svgElement)
+            Array.from(link.children).forEach(clickableZone => {
+                const collisions = Array.from(obj.querySelectorAll('*')).filter(svgElement => intersectRect(clickableZone, svgElement));
+                collisions.forEach(svgElement => {
+                    link.appendChild(svgElement)
+                })
             })
         });
     }
