@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+    <title>SVG Converter</title>
+</head>
+<body onload="convertSvgs()">
+<h1>Convert</h1>
+<object data="SVG%20Editor.svg"></object>
+<script>
+
+    function intersectRect(reference, subject) {
+        reference = reference.getBoundingClientRect();    //BOUNDING BOX OF THE FIRST OBJECT
+        subject = subject.getBoundingClientRect();    //BOUNDING BOX OF THE SECOND OBJECT
+
+        //CHECK IF THE TWO BOUNDING BOXES OVERLAP
+        return reference.left <= subject.left && reference.right >= subject.right &&
+            reference.top <= subject.top && reference.bottom >= subject.bottom;
+
+    }
+
+    function convertSvgs() {
+        const obj = document.querySelector('object').contentDocument
+        const links = Array.from(obj.querySelectorAll('a'));
+        const link = links[0];
+        const clickableZone = link.children[0];
+        const collisions = Array.from(obj.querySelectorAll('*')).filter(svgElement => intersectRect(clickableZone, svgElement));
+        collisions.forEach(svgElement => {
+            link.appendChild(svgElement)
+        })
+    }
+
+</script>
+</body>
+</html>
