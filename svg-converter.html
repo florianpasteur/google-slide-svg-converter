@@ -7,7 +7,8 @@
 </head>
 <body onload="convertSvgs()">
 <h1>Convert</h1>
-<object data="SVG%20Editor.svg"></object>
+<!--<object data="SVG%20Editor.svg"></object>-->
+<div id="svg"></div>
 <script>
 
     function intersectRect(reference, subject) {
@@ -15,11 +16,29 @@
         subject = subject.getBoundingClientRect();
         return reference.left <= subject.left && reference.right >= subject.right &&
             reference.top <= subject.top && reference.bottom >= subject.bottom;
-
     }
 
-    function convertSvgs() {
-        const obj = document.querySelector('object').contentDocument
+
+    async function convertSvgs() {
+        const response = await fetch('SVG%20Editor.svg');
+        const svgContentAsText = await response.text();
+        console.log(svgContentAsText);
+        document.querySelector('#svg').innerHTML = svgContentAsText;
+
+        const obj = document;//document.querySelector('object').contentDocument;
+        const style = obj.createElement('style');
+        style.innerHTML = `a:hover  > *:first-child {
+    filter: drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4));
+  }
+
+  a:hover * {
+    transform-origin: center;
+    transform-box: fill-box;
+    transform: scale(1.05);
+    transition: transform .2s;
+    cursor: pointer;
+  }`
+        obj.querySelector('svg').appendChild(style);
         Array.from(obj.querySelectorAll('a')).forEach(link => {
             link.setAttribute("target", "_top");
             link.setAttribute("xlink:href", link.getAttribute("xlink:href").replace('https://www.google.com/url?q=', ''))
@@ -33,6 +52,14 @@
                 })
             })
         });
+        const svgRoot = obj.querySelector('svg');
+        const svgContent = svgRoot.innerHTML;
+        const SVG = document.createElement('svg');
+        svgRoot.getAttributeNames().forEach(attr => {
+            SVG.setAttribute(attr, svgRoot.getAttribute(attr));
+        })
+        SVG.innerHTML = svgContent;
+        document.querySelector('object').parentElement.appendChild(SVG);
     }
 
 </script>
