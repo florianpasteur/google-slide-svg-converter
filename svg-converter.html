@@ -11,10 +11,8 @@
 <script>
 
     function intersectRect(reference, subject) {
-        reference = reference.getBoundingClientRect();    //BOUNDING BOX OF THE FIRST OBJECT
-        subject = subject.getBoundingClientRect();    //BOUNDING BOX OF THE SECOND OBJECT
-
-        //CHECK IF THE TWO BOUNDING BOXES OVERLAP
+        reference = reference.getBoundingClientRect();
+        subject = subject.getBoundingClientRect();
         return reference.left <= subject.left && reference.right >= subject.right &&
             reference.top <= subject.top && reference.bottom >= subject.bottom;
 
