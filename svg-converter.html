@@ -2,14 +2,92 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+    <link rel="stylesheet" href="https://classless.de/classless.css">
     <title>SVG Converter</title>
+    <style>
+        svg a:hover > *:first-child {
+            filter: drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4));
+        }
+
+        svg a:hover * {
+            transform-origin: center;
+            transform-box: fill-box;
+            transform: scale(1.05);
+            transition: transform .2s;
+            cursor: pointer;
+        }
+    </style>
 </head>
-<body onload="convertSvgs()">
-<h1>Convert</h1>
-<!--<object data="SVG%20Editor.svg"></object>-->
-<div id="svg"></div>
+<body onload="bindActions()">
+<h1>Google Slide Adapter for Delivery Hub</h1>
+<p>This page helps you convert a slide exported as SVG from Google Slide into an animated clickable.</p>
+<ul>
+    <li>Transform clickable areas of the slide into animated zones</li>
+    <li>Make links that redirects to Google as direct link</li>
+    <li>Make Delivery Hub links environment agnostic (prod, staging, local), i.e transform the links from absolute to
+        relative links
+    </li>
+</ul>
+<h2>Choose your slide</h2>
+<form>
+    <fieldset>
+        <legend></legend>
+
+        <div class="row">
+            <div class="col">
+                <label for="svgInput">Google Slide as SVG</label>
+                <input id="svgInput" type="file" accept="image/svg+xml">
+            </div>
+        </div>
+    </fieldset>
+</form>
+<div id="output-area" style="display: none">
+    <h2>Output</h2>
+    <fieldset>
+        <legend>Your animated slide</legend>
+
+        <div id="svg-output-placeholder"></div>
+
+        <p style="text-align: right; font-size: 1.3em">
+            <a href="#" id="download" download>Download</a>
+        </p>
+    </fieldset>
+</div>
 <script>
+
+    function bindActions() {
+        document.querySelector("#svgInput").addEventListener('change', (event) => {
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                document.querySelector('#output-area').style.display = "block";
+                renderSvg(e.target.result);
+                modifySvg();
+                updateDownloadForm(event.target.files[0].name);
+                document.querySelector('#download').scrollIntoView({behavior: "smooth", block: "end"});
+            }
+
+            reader.readAsText(event.target.files[0]);
+        })
+    }
+
+    function renderSvg(svgContent) {
+        document.querySelector("#svg-output-placeholder").innerHTML = svgContent;
+    }
+
+    function modifySvg() {
+        preventGoogleRedirectionOnLinks();
+        makeDeliveryHubEnvironmentAgnosticLinks();
+        moveInnerElementsUnderLinkTag();
+    }
+
+    function updateDownloadForm(filename) {
+        const svg = document.querySelector('svg');
+        const encoded = btoa(svg.outerHTML);
+        const download = document.querySelector('#download');
+        download.href = "data:image/svg+xml;base64," + encoded
+        download.download = filename;
+    }
 
     function intersectRect(reference, subject) {
         reference = reference.getBoundingClientRect();
@@ -19,32 +97,29 @@
     }
 
 
-    async function convertSvgs() {
-        const response = await fetch('SVG%20Editor.svg');
-        const svgContentAsText = await response.text();
-        console.log(svgContentAsText);
-        document.querySelector('#svg').innerHTML = svgContentAsText;
-
-        const obj = document;//document.querySelector('object').contentDocument;
-        const style = obj.createElement('style');
-        style.innerHTML = `a:hover  > *:first-child {
-    filter: drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4));
-  }
-
-  a:hover * {
-    transform-origin: center;
-    transform-box: fill-box;
-    transform: scale(1.05);
-    transition: transform .2s;
-    cursor: pointer;
-  }`
-        obj.querySelector('svg').appendChild(style);
-        Array.from(obj.querySelectorAll('a')).forEach(link => {
+    function preventGoogleRedirectionOnLinks() {
+        document.querySelectorAll('svg a').forEach(link => {
             link.setAttribute("target", "_top");
-            link.setAttribute("xlink:href", link.getAttribute("xlink:href").replace('https://www.google.com/url?q=', ''))
-            link.setAttribute("xlink:href", link.getAttribute("xlink:href").replace(/http.*\/deliveryhub\//, '/deliveryhub/'))
+            const googleLink = link.getAttribute("xlink:href");
+            const urlParams = new URL(googleLink);
+            const targetLink = urlParams.searchParams.get('q')
+            link.setAttribute("xlink:href", targetLink || googleLink)
+        })
+    }
+
+    function makeDeliveryHubEnvironmentAgnosticLinks() {
+        document.querySelectorAll('svg a').forEach(link => {
+            link.setAttribute("target", "_top");
+            const deliveryHubLink = link.getAttribute("xlink:href");
+            const targetLink = deliveryHubLink.replace(/http.*\/deliveryhub\//, '/deliveryhub/');
+            link.setAttribute("xlink:href", targetLink || deliveryHubLink)
+        })
+    }
+
+    function moveInnerElementsUnderLinkTag() {
+        document.querySelectorAll('svg a').forEach(link => {
             Array.from(link.children).forEach(clickableZone => {
-                const collisions = Array.from(obj.querySelectorAll('*')).filter(svgElement => intersectRect(clickableZone, svgElement));
+                const collisions = Array.from(document.querySelectorAll('svg *')).filter(svgElement => intersectRect(clickableZone, svgElement));
                 collisions.forEach(svgElement => {
                     if (svgElement !== link) {
                         link.appendChild(svgElement)
@@ -52,14 +127,6 @@
                 })
             })
         });
-        const svgRoot = obj.querySelector('svg');
-        const svgContent = svgRoot.innerHTML;
-        const SVG = document.createElement('svg');
-        svgRoot.getAttributeNames().forEach(attr => {
-            SVG.setAttribute(attr, svgRoot.getAttribute(attr));
-        })
-        SVG.innerHTML = svgContent;
-        document.querySelector('object').parentElement.appendChild(SVG);
     }
 
 </script>
