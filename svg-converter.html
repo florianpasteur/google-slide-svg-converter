@@ -16,7 +16,13 @@
             transition: transform .2s;
             cursor: pointer;
         }
+
+        svg {
+            border: solid 1px black;
+        }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" integrity="sha512-6lplKUSl86rUVprDIjiW8DuOniNX8UDoRATqZSds/7t6zCQZfaCe3e5zcGaQwxa8Kpn5RTM9Fvl3X2lLV4grPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" integrity="sha512-cyzxRvewl+FOKTtpBzYjW6x6IAYUCZy3sGP40hn+DQkqeluGRCax7qztK2ImL64SA+C7kVWdLI6wvdlStawhyw==" crossorigin="anonymous" referrerpolicy="no-referrer" />\
 </head>
 <body onload="bindActions()">
 <h1>Google Slide Adapter for Delivery Hub</h1>
@@ -42,8 +48,15 @@
     </fieldset>
 </form>
 <div id="output-area" style="display: none">
-    <h2>Output</h2>
+    <h2>Crop</h2>
     <fieldset>
+        <legend>Crop the slide as needed</legend>
+        <div>
+            <img id="crop-output-placeholder" />
+        </div>
+    </fieldset>
+    <h2>Output</h2>
+    <fieldset style="min-height: 600px">
         <legend>Your animated slide</legend>
 
         <div id="svg-output-placeholder"></div>
@@ -63,6 +76,7 @@
                 document.querySelector('#output-area').style.display = "block";
                 renderSvg(e.target.result);
                 modifySvg();
+                mountCrop();
                 updateDownloadForm(event.target.files[0].name);
                 document.querySelector('#download').scrollIntoView({behavior: "smooth", block: "end"});
             }
@@ -86,7 +100,9 @@
         const encoded = btoa(svg.outerHTML);
         const download = document.querySelector('#download');
         download.href = "data:image/svg+xml;base64," + encoded
-        download.download = filename;
+        if (filename) {
+            download.download = filename;
+        }
     }
 
     function intersectRect(reference, subject) {
@@ -127,6 +143,31 @@
                 })
             })
         });
+    }
+
+    function mountCrop() {
+        const image = document.querySelector('#crop-output-placeholder');
+        const svgData = new Blob([document.querySelector('svg').outerHTML], {type: 'image/svg+xml'});
+        var DOMURL = window.URL || window.webkitURL || window;
+        var b64str = DOMURL.createObjectURL(svgData);
+        console.log(b64str);
+        image.src = b64str
+        const svgWidth = document.querySelector('svg').viewBox.baseVal.width;
+        const svgHeight = document.querySelector('svg').viewBox.baseVal.height;
+        // const imageWidth = document.querySelector('img').width;
+        // const imageHeight = document.querySelector('img').height;
+        const widthRatio = value => value * (svgWidth / document.querySelector('img').width);
+        const heightRatio = value => value * (svgHeight / document.querySelector('img').height);
+        const cropper = new Cropper(image, {
+            viewMode: 2,
+            rotatable: false,
+            crop(event) {
+                console.log(event.detail);
+                document.querySelector('svg').setAttribute("viewBox", `${widthRatio(event.detail.x)} ${heightRatio(event.detail.y)} ${widthRatio(event.detail.width)} ${heightRatio(event.detail.height)}`)
+                updateDownloadForm();
+            },
+        });
+        console.log(cropper.getImageData());
     }
 
 </script>
