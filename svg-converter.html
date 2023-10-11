@@ -159,7 +159,7 @@
         const widthRatio = value => value * (svgWidth / document.querySelector('img').width);
         const heightRatio = value => value * (svgHeight / document.querySelector('img').height);
         const cropper = new Cropper(image, {
-            viewMode: 2,
+            viewMode: 0,
             rotatable: false,
             crop(event) {
                 console.log(event.detail);
